@@ -9,6 +9,9 @@ async function main() {
   if (!email || !password) {
     throw new Error("Set ADMIN_EMAIL and ADMIN_PASSWORD in .env before seeding");
   }
+  if (password.length < 12 || password === "change-me") {
+    throw new Error("ADMIN_PASSWORD must be at least 12 characters and not a placeholder");
+  }
   const passwordHash = await bcrypt.hash(password, 12);
   await prisma.admin.upsert({
     where: { email },
