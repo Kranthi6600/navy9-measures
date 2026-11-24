@@ -8,14 +8,14 @@ import { requireAdmin } from "@/lib/auth";
 import { cloudinaryConfigured, deleteImage, uploadImage } from "@/lib/cloudinary";
 import { GARMENTS, isTextField, type MeasurementData } from "@/lib/measurements";
 import { prisma } from "@/lib/prisma";
-import type { ActionState } from "@/lib/types";
+import type { ActionState, SearchResult } from "@/lib/types";
 
 function str(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
 }
 
-function isUniqueError(e: unknown) {
+function isUniqueError(e: unknown): e is Prisma.PrismaClientKnownRequestError {
   return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 }
 
@@ -81,6 +81,12 @@ function parseCustomer(formData: FormData) {
 }
 
 const DUPLICATE_MOBILE = "A customer with this mobile number already exists";
+
+function uniqueErrorMessage(e: Prisma.PrismaClientKnownRequestError) {
+  return String(e.meta?.target).includes("mobile")
+    ? `${DUPLICATE_MOBILE}. Search for them at the top to load their details.`
+    : DUPLICATE_ORDER;
+}
 
 export async function createCustomer(_prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
@@ -231,9 +237,9 @@ function parseOrder(formData: FormData) {
 
   return {
     data: {
+      entryDate: entryDate.data,
       order: {
         orderNumber,
-        entryDate: entryDate.data ?? new Date(),
         totalAmount,
         advanceAmount,
         balanceAmount,
@@ -251,62 +257,125 @@ function nestedMeasurement(data: MeasurementData | null, exists: boolean) {
 
 const DUPLICATE_ORDER = "Order number is already in use";
 
-export async function createOrder(customerId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
-  await requireAdmin();
-  const result = parseOrder(formData);
-  if (!result.data) return { error: result.error };
-  const { order, items, measurements } = result.data;
-  let id: string;
-  try {
-    const created = await prisma.order.create({
-      data: {
-        ...order,
-        customer: { connect: { id: customerId } },
-        items: { create: items },
-        blazerM: nestedMeasurement(measurements.blazerM, false),
-        trouserM: nestedMeasurement(measurements.trouserM, false),
-        shirtM: nestedMeasurement(measurements.shirtM, false),
-      },
-    });
-    id = created.id;
-  } catch (e) {
-    if (isUniqueError(e)) return { error: DUPLICATE_ORDER };
-    throw e;
-  }
-  revalidatePath("/orders");
-  revalidatePath(`/customers/${customerId}`);
-  redirect(`/orders/${id}`);
+function parsePhoto(formData: FormData): Parsed<File | null> {
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) return { data: null };
+  if (!cloudinaryConfigured) return { error: "Cloudinary is not configured" };
+  if (!file.type.startsWith("image/")) return { error: "Photo must be an image" };
+  if (file.size > MAX_PHOTO_BYTES) return { error: "Photo must be under 10 MB" };
+  return { data: file };
 }
 
-export async function updateOrder(orderId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+function todayUtc() {
+  return new Date(new Date().toISOString().slice(0, 10));
+}
+
+// Saves the customer details and the order from the single order page.
+// orderId is null when creating. Entry date is only set on creation.
+export async function saveOrder(orderId: string | null, _prev: ActionState, formData: FormData): Promise<ActionState> {
   await requireAdmin();
-  const result = parseOrder(formData);
-  if (!result.data) return { error: result.error };
-  const { order, items, measurements } = result.data;
-  const existing = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { blazerM: true, trouserM: true, shirtM: true },
-  });
-  if (!existing) return { error: "Order not found" };
+  const customerResult = parseCustomer(formData);
+  if (customerResult.error !== undefined) return { error: customerResult.error };
+  const orderResult = parseOrder(formData);
+  if (orderResult.error !== undefined) return { error: orderResult.error };
+  const photo = parsePhoto(formData);
+  if (photo.error !== undefined) return { error: photo.error };
+
+  const existingOrder = orderId
+    ? await prisma.order.findUnique({ where: { id: orderId }, include: { blazerM: true, trouserM: true, shirtM: true } })
+    : null;
+  if (orderId && !existingOrder) return { error: "Order not found" };
+  const customerId = existingOrder?.customerId ?? (str(formData, "customerId") || null);
+  const existingCustomer = customerId ? await prisma.customer.findUnique({ where: { id: customerId } }) : null;
+  if (customerId && !existingCustomer) return { error: "Customer not found" };
+
+  let uploaded: { url: string; publicId: string } | null = null;
+  if (photo.data) {
+    try {
+      uploaded = await uploadImage(photo.data, "navy9-measures/customers");
+    } catch (e) {
+      console.error(e);
+      return { error: "Photo upload failed. Check Cloudinary settings." };
+    }
+  }
+  const customerData = {
+    ...customerResult.data,
+    ...(uploaded && { photoUrl: uploaded.url, photoPublicId: uploaded.publicId }),
+  };
+  const { entryDate, order, items, measurements } = orderResult.data;
+
+  let saved: { id: string; customerId: string };
   try {
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        ...order,
-        items: { deleteMany: {}, create: items },
-        blazerM: nestedMeasurement(measurements.blazerM, !!existing.blazerM),
-        trouserM: nestedMeasurement(measurements.trouserM, !!existing.trouserM),
-        shirtM: nestedMeasurement(measurements.shirtM, !!existing.shirtM),
-      },
+    saved = await prisma.$transaction(async (tx) => {
+      const customer = existingCustomer
+        ? await tx.customer.update({ where: { id: existingCustomer.id }, data: customerData })
+        : await tx.customer.create({ data: customerData });
+      if (existingOrder) {
+        return tx.order.update({
+          where: { id: existingOrder.id },
+          data: {
+            ...order,
+            items: { deleteMany: {}, create: items },
+            blazerM: nestedMeasurement(measurements.blazerM, !!existingOrder.blazerM),
+            trouserM: nestedMeasurement(measurements.trouserM, !!existingOrder.trouserM),
+            shirtM: nestedMeasurement(measurements.shirtM, !!existingOrder.shirtM),
+          },
+        });
+      }
+      return tx.order.create({
+        data: {
+          ...order,
+          entryDate: entryDate ?? todayUtc(),
+          customer: { connect: { id: customer.id } },
+          items: { create: items },
+          blazerM: nestedMeasurement(measurements.blazerM, false),
+          trouserM: nestedMeasurement(measurements.trouserM, false),
+          shirtM: nestedMeasurement(measurements.shirtM, false),
+        },
+      });
     });
   } catch (e) {
-    if (isUniqueError(e)) return { error: DUPLICATE_ORDER };
+    if (uploaded) await deleteImage(uploaded.publicId).catch(console.error);
+    if (isUniqueError(e)) return { error: uniqueErrorMessage(e) };
     throw e;
   }
+  if (uploaded && existingCustomer?.photoPublicId) {
+    await deleteImage(existingCustomer.photoPublicId).catch(console.error);
+  }
   revalidatePath("/orders");
-  revalidatePath(`/orders/${orderId}`);
-  revalidatePath(`/customers/${existing.customerId}`);
-  redirect(`/orders/${orderId}`);
+  revalidatePath("/customers");
+  revalidatePath(`/customers/${saved.customerId}`);
+  revalidatePath(`/orders/${saved.id}`);
+  redirect(`/orders/${saved.id}`);
+}
+
+export async function searchOrdersAndCustomers(q: string): Promise<SearchResult> {
+  await requireAdmin();
+  const query = q.trim().slice(0, 50);
+  if (query.length < 2) return { customers: [], orders: [] };
+  const [customers, orders] = await Promise.all([
+    prisma.customer.findMany({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { mobile: { contains: normalizeMobile(query) || query } },
+        ],
+      },
+      select: { id: true, name: true, mobile: true },
+      orderBy: { name: "asc" },
+      take: 8,
+    }),
+    prisma.order.findMany({
+      where: { orderNumber: { startsWith: query, mode: "insensitive" } },
+      select: { id: true, orderNumber: true, customer: { select: { name: true } } },
+      orderBy: { entryDate: "desc" },
+      take: 5,
+    }),
+  ]);
+  return {
+    customers,
+    orders: orders.map((o) => ({ id: o.id, orderNumber: o.orderNumber, customerName: o.customer.name })),
+  };
 }
 
 export async function deleteOrder(orderId: string) {

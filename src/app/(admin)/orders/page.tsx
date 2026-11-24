@@ -27,7 +27,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Orders</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Orders</h1>
+        <Link href="/orders/new" className="btn-primary">+ New order</Link>
+      </div>
       <form className="flex gap-2">
         <input className="input max-w-md" name="q" defaultValue={query} placeholder="Search by order no., customer name or mobile" />
         <button className="btn">Search</button>

@@ -5,7 +5,10 @@ import { useState } from "react";
 import { formatMoney } from "@/lib/format";
 import { GARMENTS, PRODUCTS, isTextField, type GarmentRelation, type MeasurementData } from "@/lib/measurements";
 import type { ActionState } from "@/lib/types";
+import { CustomerFields, type CustomerValues } from "./CustomerFields";
+import { CustomerSearch } from "./CustomerSearch";
 import { DateInput } from "./DateInput";
+import { PhotoDrop } from "./PhotoDrop";
 import { SubmitButton } from "./SubmitButton";
 import { useActionForm } from "./useActionForm";
 
@@ -18,6 +21,7 @@ export type OrderDefaults = {
   advanceAmount?: number | null;
   items?: { product: string; rate: number; quantity: number }[];
   measurements?: Partial<Record<GarmentRelation, MeasurementData | null>>;
+  customer?: (CustomerValues & { id: string; photoUrl: string | null }) | null;
 };
 
 const emptyRow: ItemRow = { product: "", rate: "", quantity: "1" };
@@ -27,16 +31,32 @@ function rowAmount(row: ItemRow) {
   return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0;
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <details open className="card group">
+      <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-blue-900 [&::-webkit-details-marker]:hidden">
+        {title}
+        <span className="text-slate-400 transition-transform group-open:rotate-180">▾</span>
+      </summary>
+      <div className="mt-4">{children}</div>
+    </details>
+  );
+}
+
 export function OrderForm({
   action,
   defaults,
   cancelHref,
   submitLabel,
+  photoEnabled,
+  showSearch,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   defaults: OrderDefaults;
   cancelHref: string;
   submitLabel: string;
+  photoEnabled: boolean;
+  showSearch?: boolean;
 }) {
   const { state, onSubmit, pending } = useActionForm(action);
   const [items, setItems] = useState<ItemRow[]>(
@@ -54,26 +74,97 @@ export function OrderForm({
   const itemsTotal = items.reduce((sum, row) => sum + (row.product ? rowAmount(row) : 0), 0);
   const effectiveTotal = total !== "" ? Number(total) : items.some((r) => r.product) ? itemsTotal : null;
   const balance = effectiveTotal != null ? effectiveTotal - Number(advance || 0) : null;
+  const customer = defaults.customer;
 
   function updateRow(index: number, patch: Partial<ItemRow>) {
     setItems((rows) => rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   }
 
   return (
-    <form method="post" onSubmit={onSubmit} className="space-y-6">
-      <div className="card grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div>
-          <label className="label" htmlFor="orderNumber">Order No. *</label>
-          <input className="input" id="orderNumber" name="orderNumber" required defaultValue={defaults.orderNumber} />
+    <form
+      method="post"
+      onSubmit={onSubmit}
+      // Open a collapsed section so the browser can focus an invalid field inside it.
+      onInvalidCapture={(e) => (e.target as HTMLElement).closest("details")?.setAttribute("open", "")}
+      className="space-y-4"
+    >
+      <Section title="Customer">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_12rem]">
+          <div className="space-y-4">
+            {showSearch && <CustomerSearch />}
+            {customer && <input type="hidden" name="customerId" value={customer.id} />}
+            {showSearch && customer && (
+              <p className="rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                Existing customer loaded. Changes below update their profile.{" "}
+                <Link href="/orders/new" className="font-medium underline">Start with a new customer</Link>
+              </p>
+            )}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="label" htmlFor="orderNumber">Order No. *</label>
+                <input className="input font-mono" id="orderNumber" name="orderNumber" required defaultValue={defaults.orderNumber} />
+              </div>
+              <div>
+                <label className="label" htmlFor="entryDate">Entry date</label>
+                <DateInput
+                  id="entryDate"
+                  name="entryDate"
+                  readOnly
+                  tabIndex={-1}
+                  defaultToday
+                  defaultValue={defaults.entryDate}
+                  className="input cursor-not-allowed bg-slate-100 text-slate-500"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <CustomerFields customer={customer} />
+            </div>
+          </div>
+          <PhotoDrop enabled={photoEnabled} currentUrl={customer?.photoUrl} />
         </div>
-        <div>
-          <label className="label" htmlFor="entryDate">Entry date</label>
-          <DateInput id="entryDate" name="entryDate" defaultToday defaultValue={defaults.entryDate} />
-        </div>
-      </div>
+      </Section>
 
-      <section className="card space-y-3">
-        <h2 className="text-sm font-semibold text-blue-900">Items</h2>
+      <Section title="Measurements">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {GARMENTS.map((garment) => {
+            const values = defaults.measurements?.[garment.relation] ?? {};
+            return (
+              <fieldset key={garment.key} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                <legend className="px-1 text-sm font-semibold text-blue-900">{garment.title}</legend>
+                <p className="mb-3 text-xs text-slate-500">Leave empty if not part of this order.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {garment.fields.map((field) => {
+                    const isText = isTextField(field.key);
+                    const name = `${garment.key}.${field.key}`;
+                    return (
+                      <div key={field.key}>
+                        <label className="label" htmlFor={name}>{field.label}</label>
+                        <input
+                          className="input"
+                          id={name}
+                          name={name}
+                          type={isText ? "text" : "number"}
+                          inputMode={isText ? undefined : "decimal"}
+                          step={isText ? undefined : "0.25"}
+                          min={isText ? undefined : "0"}
+                          defaultValue={values[field.key] ?? ""}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3">
+                  <label className="label" htmlFor={`${garment.key}.comment`}>Comment</label>
+                  <textarea className="input" id={`${garment.key}.comment`} name={`${garment.key}.comment`} rows={2} defaultValue={values.comment ?? ""} />
+                </div>
+              </fieldset>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Section title="Billing">
         <datalist id="products">
           {PRODUCTS.map((p) => <option key={p} value={p} />)}
         </datalist>
@@ -116,9 +207,9 @@ export function OrderForm({
             </tbody>
           </table>
         </div>
-        <button type="button" className="btn" onClick={() => setItems((rows) => [...rows, emptyRow])}>+ Add item</button>
+        <button type="button" className="btn mt-3" onClick={() => setItems((rows) => [...rows, emptyRow])}>+ Add item</button>
 
-        <div className="grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3">
           <div>
             <label className="label" htmlFor="totalAmount">Total amount</label>
             <input className="input" id="totalAmount" name="totalAmount" type="number" min="0" step="0.01" placeholder={`${itemsTotal} (sum of items)`} value={total} onChange={(e) => setTotal(e.target.value)} />
@@ -132,42 +223,7 @@ export function OrderForm({
             <p className="py-2 font-mono text-lg font-semibold">{formatMoney(balance)}</p>
           </div>
         </div>
-      </section>
-
-      {GARMENTS.map((garment) => {
-        const values = defaults.measurements?.[garment.relation] ?? {};
-        return (
-          <fieldset key={garment.key} className="card">
-            <legend className="px-1 text-sm font-semibold text-blue-900">{garment.title}</legend>
-            <p className="mb-3 text-xs text-slate-500">Leave empty if not part of this order.</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-              {garment.fields.map((field) => {
-                const isText = isTextField(field.key);
-                const name = `${garment.key}.${field.key}`;
-                return (
-                  <div key={field.key}>
-                    <label className="label" htmlFor={name}>{field.label}</label>
-                    <input
-                      className="input"
-                      id={name}
-                      name={name}
-                      type={isText ? "text" : "number"}
-                      inputMode={isText ? undefined : "decimal"}
-                      step={isText ? undefined : "0.25"}
-                      min={isText ? undefined : "0"}
-                      defaultValue={values[field.key] ?? ""}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-3">
-              <label className="label" htmlFor={`${garment.key}.comment`}>Comment</label>
-              <textarea className="input" id={`${garment.key}.comment`} name={`${garment.key}.comment`} rows={2} defaultValue={values.comment ?? ""} />
-            </div>
-          </fieldset>
-        );
-      })}
+      </Section>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <div className="flex gap-2">
