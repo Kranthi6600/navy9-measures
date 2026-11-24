@@ -20,7 +20,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         : undefined,
       orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
       take: 100,
-    include,
+      include,
     }),
   ]);
   const orders = exact ? [exact, ...matches.filter((o) => o.id !== exact.id)] : matches;
