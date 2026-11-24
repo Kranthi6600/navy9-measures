@@ -21,7 +21,7 @@ model Customer {
   mobile        String    @unique
   email         String?
   dateOfBirth   DateTime?
-  height        Float? // in cm or inches
+  height        Float? // total inches (entered as feet + inches)
   weight        Float? // in kg
   photoUrl      String? // Cloudinary URL
   photoPublicId String? // Cloudinary public id, used to delete/replace the photo

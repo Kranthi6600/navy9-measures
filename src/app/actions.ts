@@ -59,8 +59,13 @@ function parseCustomer(formData: FormData) {
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const dateOfBirth = parseDate(str(formData, "dateOfBirth"), "date of birth");
   if (dateOfBirth.error !== undefined) return { error: dateOfBirth.error };
-  const height = parseNumber(str(formData, "height"), "height", 300);
-  if (height.error !== undefined) return { error: height.error };
+  const feet = parseNumber(str(formData, "heightFeet"), "height (feet)", 9);
+  if (feet.error !== undefined) return { error: feet.error };
+  const inches = parseNumber(str(formData, "heightInches"), "height (inches)", 11.9);
+  if (inches.error !== undefined) return { error: inches.error };
+  const height = {
+    data: feet.data == null && inches.data == null ? null : (feet.data ?? 0) * 12 + (inches.data ?? 0),
+  };
   const weight = parseNumber(str(formData, "weight"), "weight", 500);
   if (weight.error !== undefined) return { error: weight.error };
   return {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { splitHeight } from "@/lib/format";
 import type { ActionState } from "@/lib/types";
 import { DateInput } from "./DateInput";
 import { SubmitButton } from "./SubmitButton";
@@ -25,6 +26,7 @@ export function CustomerForm({
   cancelHref: string;
 }) {
   const { state, onSubmit, pending } = useActionForm(action);
+  const height = splitHeight(customer?.height);
   return (
     <form method="post" onSubmit={onSubmit} className="card space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -45,10 +47,13 @@ export function CustomerForm({
           <DateInput id="dateOfBirth" name="dateOfBirth" defaultValue={customer?.dateOfBirth} />
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="label" htmlFor="height">Height</label>
-            <input className="input" id="height" name="height" type="number" step="0.1" min="0" placeholder="cm / in" defaultValue={customer?.height ?? ""} />
-          </div>
+          <fieldset>
+            <legend className="label">Height</legend>
+            <div className="flex gap-2">
+              <input className="input" name="heightFeet" type="number" step="1" min="0" max="9" placeholder="ft" aria-label="Height feet" defaultValue={height?.feet ?? ""} />
+              <input className="input" name="heightInches" type="number" step="0.1" min="0" max="11.9" placeholder="in" aria-label="Height inches" defaultValue={height?.inches ?? ""} />
+            </div>
+          </fieldset>
           <div>
             <label className="label" htmlFor="weight">Weight (kg)</label>
             <input className="input" id="weight" name="weight" type="number" step="0.1" min="0" defaultValue={customer?.weight ?? ""} />

@@ -5,7 +5,7 @@ import { deleteCustomer, removeCustomerPhoto, uploadCustomerPhoto } from "@/app/
 import { DeleteButton } from "@/components/DeleteButton";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { cloudinaryConfigured } from "@/lib/cloudinary";
-import { dateFmt, formatMoney } from "@/lib/format";
+import { dateFmt, formatHeight, formatMoney } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +25,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     ["Mobile", customer.mobile],
     ["Email", customer.email],
     ["Date of birth", customer.dateOfBirth && dateFmt.format(customer.dateOfBirth)],
-    ["Height", customer.height],
+    ["Height", formatHeight(customer.height)],
     ["Weight", customer.weight != null ? `${customer.weight} kg` : null],
   ] as const;
 
