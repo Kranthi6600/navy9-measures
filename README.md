@@ -8,6 +8,7 @@ Admin app for a tailoring shop: customers, orders, garment measurements, payment
 
 - Admin login. Every page except `/login` requires a signed-in admin.
 - Customers with a unique mobile number, email, date of birth, height, weight and one photo. Search by name, mobile or email.
+- Single-page order form: customer details (search loads an existing customer), photo drag-and-drop, Blazer/Trouser/Shirt measurement cards side by side, and billing, each in a collapsible section.
 - Orders with an editable, auto-suggested order number, entry date and items (product, rate, quantity, amount).
 - Total defaults to the sum of item amounts. Balance is calculated as total minus advance.
 - Blazer/Waistcoat, Trouser and Shirt measurements per order. New orders are pre-filled from the customer's most recent measurements.
