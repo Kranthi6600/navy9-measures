@@ -352,8 +352,9 @@ export async function saveOrder(orderId: string | null, _prev: ActionState, form
 export async function searchOrdersAndCustomers(q: string): Promise<SearchResult> {
   await requireAdmin();
   const query = q.trim().slice(0, 50);
-  if (query.length < 2) return { customers: [], orders: [] };
-  const [customers, orders] = await Promise.all([
+  if (!query) return { customers: [], orders: [] };
+  const orderSelect = { id: true, orderNumber: true, customer: { select: { name: true } } } as const;
+  const [customers, exact, prefixed] = await Promise.all([
     prisma.customer.findMany({
       where: {
         OR: [
@@ -365,13 +366,15 @@ export async function searchOrdersAndCustomers(q: string): Promise<SearchResult>
       orderBy: { name: "asc" },
       take: 8,
     }),
+    prisma.order.findUnique({ where: { orderNumber: query }, select: orderSelect }),
     prisma.order.findMany({
       where: { orderNumber: { startsWith: query, mode: "insensitive" } },
-      select: { id: true, orderNumber: true, customer: { select: { name: true } } },
+      select: orderSelect,
       orderBy: { entryDate: "desc" },
       take: 5,
     }),
   ]);
+  const orders = exact ? [exact, ...prefixed.filter((o) => o.id !== exact.id)].slice(0, 5) : prefixed;
   return {
     customers,
     orders: orders.map((o) => ({ id: o.id, orderNumber: o.orderNumber, customerName: o.customer.name })),

@@ -11,7 +11,7 @@ export function CustomerSearch() {
   const query = q.trim();
 
   useEffect(() => {
-    if (query.length < 2) return;
+    if (!query) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       const data = await searchOrdersAndCustomers(query);
@@ -23,7 +23,7 @@ export function CustomerSearch() {
     };
   }, [query]);
 
-  const data = query.length >= 2 && result?.query === query ? result.data : null;
+  const data = query && result?.query === query ? result.data : null;
   const empty = data && !data.customers.length && !data.orders.length;
 
   return (
