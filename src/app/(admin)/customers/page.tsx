@@ -13,7 +13,7 @@ export default async function CustomersPage({
       ? {
           OR: [
             { name: { contains: query, mode: "insensitive" } },
-            { phone: { contains: query } },
+            { phone: { contains: query, mode: "insensitive" } },
             { email: { contains: query, mode: "insensitive" } },
           ],
         }
