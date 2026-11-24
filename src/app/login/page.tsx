@@ -8,7 +8,8 @@ function safeCallbackUrl(value: string | null) {
   if (!value) return "/customers";
   try {
     const url = new URL(value, window.location.origin);
-    if (url.origin === window.location.origin) return url.pathname + url.search + url.hash;
+    const sameOrigin = url.origin === window.location.origin;
+    if (sameOrigin && !/^[/\\]{2}/.test(url.pathname)) return url.pathname + url.search + url.hash;
   } catch {}
   return "/customers";
 }
