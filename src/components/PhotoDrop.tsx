@@ -2,16 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+
 export function PhotoDrop({ enabled, currentUrl }: { enabled: boolean; currentUrl?: string | null }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => () => {
     if (preview) URL.revokeObjectURL(preview);
   }, [preview]);
 
   function show(file: File | undefined) {
+    if (file && file.size > MAX_PHOTO_BYTES) {
+      setError("Photo must be under 10 MB");
+      clear();
+      return;
+    }
+    setError(null);
     setPreview(file?.type.startsWith("image/") ? URL.createObjectURL(file) : null);
   }
 
@@ -20,6 +29,7 @@ export function PhotoDrop({ enabled, currentUrl }: { enabled: boolean; currentUr
     setDragging(false);
     const file = e.dataTransfer.files[0];
     if (!enabled || !inputRef.current || !file?.type.startsWith("image/")) return;
+    if (file.size > MAX_PHOTO_BYTES) return show(file);
     const transfer = new DataTransfer();
     transfer.items.add(file);
     inputRef.current.files = transfer.files;
@@ -64,6 +74,7 @@ export function PhotoDrop({ enabled, currentUrl }: { enabled: boolean; currentUr
           onChange={(e) => show(e.target.files?.[0])}
         />
       </label>
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
       {preview && (
         <button type="button" className="mt-1 text-xs text-slate-500 hover:text-red-600" onClick={clear}>
           Remove new photo
