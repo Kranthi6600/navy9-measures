@@ -137,7 +137,7 @@ export async function uploadCustomerPhoto(
   await requireAdmin();
   if (!cloudinaryConfigured) return { error: "Cloudinary is not configured" };
   const file = formData.get("photo");
-  if (!(file instanceof File) || file.size === 0) return { error: "Choose a photo to upload" };
+  if (!file || typeof file === "string" || file.size === 0) return { error: "Choose a photo to upload" };
   if (!file.type.startsWith("image/")) return { error: "File must be an image" };
   if (file.size > MAX_PHOTO_BYTES) return { error: "Photo must be under 10 MB" };
   const existing = await prisma.customer.findUnique({ where: { id: customerId } });
@@ -259,7 +259,7 @@ const DUPLICATE_ORDER = "Order number is already in use";
 
 function parsePhoto(formData: FormData): Parsed<File | null> {
   const file = formData.get("photo");
-  if (!(file instanceof File) || file.size === 0) return { data: null };
+  if (!file || typeof file === "string" || file.size === 0) return { data: null };
   if (!cloudinaryConfigured) return { error: "Cloudinary is not configured" };
   if (!file.type.startsWith("image/")) return { error: "Photo must be an image" };
   if (file.size > MAX_PHOTO_BYTES) return { error: "Photo must be under 10 MB" };
