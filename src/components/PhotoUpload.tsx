@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { ActionState } from "@/lib/types";
 import { SubmitButton } from "./SubmitButton";
+import { useActionForm } from "./useActionForm";
 
 export function PhotoUpload({
   action,
@@ -11,7 +12,7 @@ export function PhotoUpload({
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   enabled: boolean;
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const { state, onSubmit, pending } = useActionForm(action);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export function PhotoUpload({
   }
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+    <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-end">
       <div className="flex-1">
         <label className="label" htmlFor="photo">Photo</label>
         <input className="input" id="photo" name="photo" type="file" accept="image/*" capture="environment" required />
@@ -36,7 +37,7 @@ export function PhotoUpload({
         <label className="label" htmlFor="caption">Caption</label>
         <input className="input" id="caption" name="caption" placeholder="e.g. Front view" />
       </div>
-      <SubmitButton pendingText="Uploading…">Upload</SubmitButton>
+      <SubmitButton pending={pending} pendingText="Uploading…">Upload</SubmitButton>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       {state?.success && <p className="text-sm text-green-700">{state.success}</p>}
     </form>

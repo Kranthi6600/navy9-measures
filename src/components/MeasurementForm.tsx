@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
 import { MEASUREMENT_GROUPS, type MeasurementValues } from "@/lib/measurements";
 import type { ActionState } from "@/lib/types";
 import { SubmitButton } from "./SubmitButton";
+import { useActionForm } from "./useActionForm";
 
 export type MeasurementDefaults = MeasurementValues & {
   unit?: "IN" | "CM";
@@ -21,11 +21,11 @@ export function MeasurementForm({
   defaults?: MeasurementDefaults;
   cancelHref: string;
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const { state, onSubmit, pending } = useActionForm(action);
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       <div className="card grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label className="label" htmlFor="takenAt">Date</label>
@@ -70,7 +70,7 @@ export function MeasurementForm({
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <div className="flex gap-2">
-        <SubmitButton>Save measurements</SubmitButton>
+        <SubmitButton pending={pending}>Save measurements</SubmitButton>
         <Link href={cancelHref} className="btn">Cancel</Link>
       </div>
     </form>

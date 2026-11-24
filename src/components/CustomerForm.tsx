@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
 import type { ActionState } from "@/lib/types";
 import { SubmitButton } from "./SubmitButton";
+import { useActionForm } from "./useActionForm";
 
 type Customer = {
   name: string;
@@ -22,9 +22,9 @@ export function CustomerForm({
   customer?: Customer;
   cancelHref: string;
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const { state, onSubmit, pending } = useActionForm(action);
   return (
-    <form action={formAction} className="card space-y-4">
+    <form onSubmit={onSubmit} className="card space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="label" htmlFor="name">Name *</label>
@@ -49,7 +49,7 @@ export function CustomerForm({
       </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
       <div className="flex gap-2">
-        <SubmitButton>{customer ? "Save changes" : "Create customer"}</SubmitButton>
+        <SubmitButton pending={pending}>{customer ? "Save changes" : "Create customer"}</SubmitButton>
         <Link href={cancelHref} className="btn">Cancel</Link>
       </div>
     </form>
