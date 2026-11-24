@@ -34,8 +34,14 @@ export function CustomerFields({ customer }: { customer?: CustomerValues | null 
       <fieldset>
         <legend className="label">Height</legend>
         <div className="flex gap-2">
-          <input className="input" name="heightFeet" type="number" step="1" min="0" max="9" placeholder="ft" aria-label="Height feet" defaultValue={height?.feet ?? ""} />
-          <input className="input" name="heightInches" type="number" step="0.1" min="0" max="11.9" placeholder="in" aria-label="Height inches" defaultValue={height?.inches ?? ""} />
+          <label className="flex-1">
+            <input className="input" name="heightFeet" type="number" step="1" min="0" max="9" placeholder="ft" defaultValue={height?.feet ?? ""} />
+            <span className="mt-0.5 block text-xs text-slate-500">Feet</span>
+          </label>
+          <label className="flex-1">
+            <input className="input" name="heightInches" type="number" step="0.1" min="0" max="11.9" placeholder="in" defaultValue={height?.inches ?? ""} />
+            <span className="mt-0.5 block text-xs text-slate-500">Inches</span>
+          </label>
         </div>
       </fieldset>
       <div>
