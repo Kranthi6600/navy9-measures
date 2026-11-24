@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+enum Unit {
+  IN
+  CM
+}
+
+model Customer {
+  id           String        @id @default(cuid())
+  name         String
+  phone        String?
+  email        String?
+  address      String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  measurements Measurement[]
+  photos       Photo[]
+
+  @@index([name])
+  @@index([phone])
+}
+
+model Measurement {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  unit       Unit     @default(IN)
+  takenAt    DateTime @default(now())
+  notes      String?
+
+  // Upper body
+  neck         Float?
+  chest        Float?
+  waist        Float?
+  hip          Float?
+  shoulder     Float?
+  sleeveLength Float?
+  armhole      Float?
+  bicep        Float?
+  wrist        Float?
+  shirtLength  Float?
+  coatLength   Float?
+
+  // Lower body
+  trouserWaist  Float?
+  seat          Float?
+  thigh         Float?
+  knee          Float?
+  calf          Float?
+  bottom        Float?
+  inseam        Float?
+  trouserLength Float?
+  rise          Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([customerId])
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  url        String
+  publicId   String
+  caption    String?
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+}
