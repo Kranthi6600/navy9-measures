@@ -5,7 +5,10 @@ import { prisma } from "@/lib/prisma";
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;
   const query = q.trim();
-  const orders = await prisma.order.findMany({
+  const include = { customer: { select: { id: true, name: true, mobile: true } } };
+  const [exact, matches] = await Promise.all([
+    query ? prisma.order.findUnique({ where: { orderNumber: query }, include }) : null,
+    prisma.order.findMany({
     where: query
       ? {
           OR: [
@@ -17,8 +20,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       : undefined,
     orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
     take: 100,
-    include: { customer: { select: { id: true, name: true, mobile: true } } },
-  });
+    include,
+    }),
+  ]);
+  const orders = exact ? [exact, ...matches.filter((o) => o.id !== exact.id)] : matches;
 
   return (
     <div className="space-y-4">
