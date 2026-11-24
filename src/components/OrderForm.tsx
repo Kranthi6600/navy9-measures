@@ -44,7 +44,11 @@ export function OrderForm({
       ? defaults.items.map((i) => ({ product: i.product, rate: String(i.rate), quantity: String(i.quantity) }))
       : [emptyRow],
   );
-  const [total, setTotal] = useState(defaults.totalAmount?.toString() ?? "");
+  const [total, setTotal] = useState(() => {
+    const defaultItemsTotal = (defaults.items ?? []).reduce((sum, i) => sum + Math.round(i.rate * i.quantity * 100) / 100, 0);
+    const isAutoTotal = !!defaults.items?.length && defaults.totalAmount === defaultItemsTotal;
+    return defaults.totalAmount == null || isAutoTotal ? "" : defaults.totalAmount.toString();
+  });
   const [advance, setAdvance] = useState(defaults.advanceAmount?.toString() ?? "");
 
   const itemsTotal = items.reduce((sum, row) => sum + (row.product ? rowAmount(row) : 0), 0);
