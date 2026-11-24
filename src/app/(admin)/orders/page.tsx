@@ -9,17 +9,17 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const [exact, matches] = await Promise.all([
     query ? prisma.order.findUnique({ where: { orderNumber: query }, include }) : null,
     prisma.order.findMany({
-    where: query
-      ? {
-          OR: [
-            { orderNumber: { contains: query, mode: "insensitive" } },
-            { customer: { name: { contains: query, mode: "insensitive" } } },
-            { customer: { mobile: { contains: query.replace(/[\s\-().]/g, "") || query, mode: "insensitive" } } },
-          ],
-        }
-      : undefined,
-    orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
-    take: 100,
+      where: query
+        ? {
+            OR: [
+              { orderNumber: { contains: query, mode: "insensitive" } },
+              { customer: { name: { contains: query, mode: "insensitive" } } },
+              { customer: { mobile: { contains: query.replace(/[\s\-().]/g, "") || query, mode: "insensitive" } } },
+            ],
+          }
+        : undefined,
+      orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
+      take: 100,
     include,
     }),
   ]);
