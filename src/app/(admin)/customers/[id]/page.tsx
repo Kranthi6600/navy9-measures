@@ -15,7 +15,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const customer = await prisma.customer.findUnique({
     where: { id },
     include: {
-      measurements: { orderBy: { takenAt: "desc" } },
+      measurements: { orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }] },
       photos: { orderBy: { createdAt: "desc" } },
     },
   });

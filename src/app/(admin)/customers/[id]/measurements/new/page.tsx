@@ -8,7 +8,7 @@ export default async function NewMeasurementPage({ params }: { params: Promise<{
   const { id } = await params;
   const customer = await prisma.customer.findUnique({
     where: { id },
-    include: { measurements: { orderBy: { takenAt: "desc" }, take: 1 } },
+    include: { measurements: { orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }], take: 1 } },
   });
   if (!customer) notFound();
   const latest = customer.measurements[0];
