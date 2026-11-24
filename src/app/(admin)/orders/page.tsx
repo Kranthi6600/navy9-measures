@@ -14,7 +14,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           OR: [
             { orderNumber: { contains: query, mode: "insensitive" } },
             { customer: { name: { contains: query, mode: "insensitive" } } },
-            { customer: { mobile: { contains: query, mode: "insensitive" } } },
+            { customer: { mobile: { contains: query.replace(/[\s\-().]/g, "") || query, mode: "insensitive" } } },
           ],
         }
       : undefined,

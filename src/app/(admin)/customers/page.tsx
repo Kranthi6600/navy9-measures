@@ -10,7 +10,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       ? {
           OR: [
             { name: { contains: query, mode: "insensitive" } },
-            { mobile: { contains: query, mode: "insensitive" } },
+            { mobile: { contains: query.replace(/[\s\-().]/g, "") || query, mode: "insensitive" } },
             { email: { contains: query, mode: "insensitive" } },
           ],
         }

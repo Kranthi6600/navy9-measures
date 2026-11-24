@@ -37,9 +37,16 @@ function parseDate(raw: string, label: string): Parsed<Date | null> {
 
 // Customers
 
+function normalizeMobile(value: string) {
+  return value.replace(/[\s\-().]/g, "");
+}
+
 const customerSchema = z.object({
   name: z.string().min(1, "Name is required").max(120),
-  mobile: z.string().min(1, "Mobile is required").max(20),
+  mobile: z
+    .string()
+    .transform(normalizeMobile)
+    .pipe(z.string().min(1, "Mobile is required").max(20)),
   email: z.union([z.literal(""), z.email("Invalid email address")]),
 });
 
