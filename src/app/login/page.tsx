@@ -4,6 +4,15 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
+function safeCallbackUrl(value: string | null) {
+  if (!value) return "/customers";
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin === window.location.origin) return url.pathname + url.search + url.hash;
+  } catch {}
+  return "/customers";
+}
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -25,8 +34,7 @@ function LoginForm() {
       setError("Invalid email or password");
       return;
     }
-    const callbackUrl = params.get("callbackUrl");
-    router.push(callbackUrl?.startsWith("/") ? callbackUrl : "/customers");
+    router.push(safeCallbackUrl(params.get("callbackUrl")));
     router.refresh();
   }
 
