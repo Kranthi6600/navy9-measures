@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { MEASUREMENT_GROUPS, type MeasurementValues } from "@/lib/measurements";
 import type { ActionState } from "@/lib/types";
 import { SubmitButton } from "./SubmitButton";
@@ -22,14 +23,22 @@ export function MeasurementForm({
   cancelHref: string;
 }) {
   const { state, onSubmit, pending } = useActionForm(action);
-  const today = new Date().toISOString().slice(0, 10);
+  const dateRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (defaults?.takenAt || !dateRef.current) return;
+    const now = new Date();
+    dateRef.current.value = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 10);
+  }, [defaults?.takenAt]);
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="card grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label className="label" htmlFor="takenAt">Date</label>
-          <input className="input" id="takenAt" name="takenAt" type="date" defaultValue={defaults?.takenAt ?? today} />
+          <input className="input" id="takenAt" name="takenAt" type="date" ref={dateRef} defaultValue={defaults?.takenAt} />
         </div>
         <div>
           <label className="label" htmlFor="unit">Unit</label>

@@ -9,6 +9,8 @@ import { cloudinaryConfigured } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 
 const dateFmt = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" });
+// takenAt is a calendar date stored at midnight UTC
+const takenAtFmt = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeZone: "UTC" });
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -57,7 +59,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <details key={m.id} open={i === 0} className="card">
             <summary className="flex cursor-pointer items-center justify-between gap-2">
               <span className="font-medium">
-                {dateFmt.format(m.takenAt)}
+                {takenAtFmt.format(m.takenAt)}
                 {i === 0 && <span className="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-900">Latest</span>}
               </span>
               <span className="text-xs text-slate-500">{m.unit === "IN" ? "Inches" : "Centimetres"}</span>
