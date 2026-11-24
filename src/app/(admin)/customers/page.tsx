@@ -19,7 +19,8 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
     take: 100,
     include: {
       _count: { select: { orders: true } },
-      orders: { orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }], take: 1, select: { orderNumber: true, entryDate: true } },
+      // FIXED: Removed 'createdAt' from orderBy
+      orders: { orderBy: { entryDate: "desc" }, take: 1, select: { orderNumber: true, entryDate: true } },
     },
   });
 

@@ -26,9 +26,13 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
         defaults={{
           orderNumber: order.orderNumber,
           entryDate: toDateInput(order.entryDate),
-          totalAmount: order.totalAmount,
-          advanceAmount: order.advanceAmount,
-          items: order.items,
+                    totalAmount: order.totalAmount ? Number(order.totalAmount) : null,
+          advanceAmount: order.advanceAmount ? Number(order.advanceAmount) : null,
+          items: order.items.map((item) => ({
+            ...item,
+            rate: Number(item.rate),
+            amount: Number(item.amount),
+          })),
           measurements: { blazerM: order.blazerM, trouserM: order.trouserM, shirtM: order.shirtM },
           customer: {
             id: customer.id,

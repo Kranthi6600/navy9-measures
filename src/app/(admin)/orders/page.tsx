@@ -18,7 +18,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             ],
           }
         : undefined,
-      orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
+      orderBy: { entryDate: "desc" },
       take: 100,
       include,
     }),

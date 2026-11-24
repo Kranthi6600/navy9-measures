@@ -16,7 +16,7 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
   const recent = customer
     ? await prisma.order.findMany({
         where: { customerId: customer.id },
-        orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
+        orderBy: { entryDate: "desc" },
         take: 20,
         include: { blazerM: true, trouserM: true, shirtM: true },
       })

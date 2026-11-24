@@ -1,24 +1,35 @@
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
+import bcrypt from "bcrypt";
+import "dotenv/config"; // Ensures it can read your .env file
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+
+// Initialize Prisma with the required driver adapter
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const email = process.env.ADMIN_EMAIL?.toLowerCase();
-  const password = process.env.ADMIN_PASSWORD;
-  if (!email || !password) {
-    throw new Error("Set ADMIN_EMAIL and ADMIN_PASSWORD in .env before seeding");
-  }
-  if (password.length < 12 || password === "change-me") {
-    throw new Error("ADMIN_PASSWORD must be at least 12 characters and not a placeholder");
-  }
-  const passwordHash = await bcrypt.hash(password, 12);
-  await prisma.admin.upsert({
+  const email = process.env.ADMIN_EMAIL || "navy9fl@gmail.com";
+  const password = process.env.ADMIN_PASSWORD || "navy9";
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  // Create or update the admin user
+  const admin = await prisma.admin.upsert({
     where: { email },
     update: { passwordHash },
-    create: { email, name: "Admin", passwordHash },
+    create: {
+      email,
+      passwordHash,
+      name: "Admin",
+    },
   });
-  console.log(`Admin user ready: ${email}`);
+
+  console.log(`✅ Admin user created/updated: ${admin.email}`);
+  console.log(`🔑 Password: ${password}`);
 }
 
 main()
@@ -26,4 +37,8 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    // Disconnect properly from the database
+    await prisma.$disconnect();
+    await pool.end();
+  });

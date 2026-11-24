@@ -14,7 +14,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     where: { id },
     include: {
       orders: {
-        orderBy: [{ entryDate: "desc" }, { createdAt: "desc" }],
+        orderBy: { entryDate: "desc" },
         include: { items: { select: { product: true, quantity: true } } },
       },
     },

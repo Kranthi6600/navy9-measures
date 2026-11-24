@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Admin {
@@ -34,26 +33,21 @@ model Customer {
 
 model Order {
   id          String   @id @default(uuid())
-  orderNumber String   @unique // e.g. "636"
+  orderNumber String   @unique // e.g., "636"
   customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer    Customer @relation(fields: [customerId], references: [id])
   entryDate   DateTime @default(now())
 
-  // Financials
-  totalAmount   Float?
-  advanceAmount Float?
-  balanceAmount Float?
+  // CHANGED FROM FLOAT TO DECIMAL
+  totalAmount   Decimal? @db.Decimal(10, 2)
+  advanceAmount Decimal? @db.Decimal(10, 2)
+  balanceAmount Decimal? @db.Decimal(10, 2)
 
   blazerM  Measurement? @relation("BlazerMeasurements")
   trouserM Measurement? @relation("TrouserMeasurements")
   shirtM   Measurement? @relation("ShirtMeasurements")
 
   items OrderItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([customerId])
 }
 
 model Measurement {
@@ -99,13 +93,13 @@ model Measurement {
 }
 
 model OrderItem {
-  id       String @id @default(uuid())
-  orderId  String
-  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product  String // Blazer, Trousers, Shirt, Tie/Bow
-  rate     Float
-  quantity Int
-  amount   Float
+  id      String @id @default(uuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product String // Blazer, Trousers, Shirt, Tie/Bow
 
-  @@index([orderId])
+  // CHANGED FROM FLOAT TO DECIMAL
+  rate     Decimal @db.Decimal(10, 2)
+  quantity Int
+  amount   Decimal @db.Decimal(10, 2)
 }
