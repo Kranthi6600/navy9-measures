@@ -8,65 +8,47 @@ datasource db {
 }
 
 model Admin {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   email        String   @unique
   name         String?
   passwordHash String
   createdAt    DateTime @default(now())
 }
 
-enum Unit {
-  IN
-  CM
-}
-
 model Customer {
-  id           String        @id @default(cuid())
-  name         String
-  phone        String?
-  email        String?
-  address      String?
-  notes        String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  measurements Measurement[]
-  photos       Photo[]
+  id            String    @id @default(uuid())
+  name          String
+  mobile        String    @unique
+  email         String?
+  dateOfBirth   DateTime?
+  height        Float? // in cm or inches
+  weight        Float? // in kg
+  photoUrl      String? // Cloudinary URL
+  photoPublicId String? // Cloudinary public id, used to delete/replace the photo
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  orders        Order[]
 
   @@index([name])
-  @@index([phone])
 }
 
-model Measurement {
-  id         String   @id @default(cuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  unit       Unit     @default(IN)
-  takenAt    DateTime @default(now())
-  notes      String?
+model Order {
+  id          String   @id @default(uuid())
+  orderNumber String   @unique // e.g. "636"
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  entryDate   DateTime @default(now())
 
-  // Upper body
-  neck         Float?
-  chest        Float?
-  waist        Float?
-  hip          Float?
-  shoulder     Float?
-  sleeveLength Float?
-  armhole      Float?
-  bicep        Float?
-  wrist        Float?
-  shirtLength  Float?
-  coatLength   Float?
+  // Financials
+  totalAmount   Float?
+  advanceAmount Float?
+  balanceAmount Float?
 
-  // Lower body
-  trouserWaist  Float?
-  seat          Float?
-  thigh         Float?
-  knee          Float?
-  calf          Float?
-  bottom        Float?
-  inseam        Float?
-  trouserLength Float?
-  rise          Float?
+  blazerM  Measurement? @relation("BlazerMeasurements")
+  trouserM Measurement? @relation("TrouserMeasurements")
+  shirtM   Measurement? @relation("ShirtMeasurements")
+
+  items OrderItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -74,14 +56,56 @@ model Measurement {
   @@index([customerId])
 }
 
-model Photo {
-  id         String   @id @default(cuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  url        String
-  publicId   String
-  caption    String?
-  createdAt  DateTime @default(now())
+model Measurement {
+  id String @id @default(uuid())
 
-  @@index([customerId])
+  // Shared fields
+  size     String?
+  length   Float?
+  chest    Float?
+  waist    Float?
+  hip      Float?
+  shoulder Float?
+  slLength Float?
+  armhole  Float?
+  biceps   Float?
+
+  // Blazer/Waistcoat specific
+  neck     Float?
+  fabricNo String?
+
+  // Trousers specific
+  thighs Float?
+  knees  Float?
+  bottom Float?
+  fc     Float? // F.C
+  bc     Float? // B.C
+  hw     Float? // H.W
+  lw     Float? // L.W
+
+  // Shirt specific
+  pocket String?
+
+  comment String?
+
+  blazerOrderId String? @unique
+  blazerOrder   Order?  @relation("BlazerMeasurements", fields: [blazerOrderId], references: [id], onDelete: Cascade)
+
+  trouserOrderId String? @unique
+  trouserOrder   Order?  @relation("TrouserMeasurements", fields: [trouserOrderId], references: [id], onDelete: Cascade)
+
+  shirtOrderId String? @unique
+  shirtOrder   Order?  @relation("ShirtMeasurements", fields: [shirtOrderId], references: [id], onDelete: Cascade)
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product  String // Blazer, Trousers, Shirt, Tie/Bow
+  rate     Float
+  quantity Int
+  amount   Float
+
+  @@index([orderId])
 }

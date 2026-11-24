@@ -6,12 +6,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await requireAdmin();
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b print:hidden border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-6">
             <Link href="/customers" className="text-lg font-semibold text-blue-900">Navy9 Measures</Link>
             <nav className="flex gap-4 text-sm text-slate-600">
               <Link href="/customers" className="hover:text-blue-900">Customers</Link>
+              <Link href="/orders" className="hover:text-blue-900">Orders</Link>
               <Link href="/customers/new" className="hover:text-blue-900">New customer</Link>
             </nav>
           </div>

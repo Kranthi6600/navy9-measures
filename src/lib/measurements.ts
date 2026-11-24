@@ -1,41 +1,56 @@
-export const MEASUREMENT_GROUPS = [
+export const NUMBER_FIELDS = [
+  "length", "chest", "waist", "hip", "shoulder", "slLength", "armhole", "biceps",
+  "neck", "thighs", "knees", "bottom", "fc", "bc", "hw", "lw",
+] as const;
+export const TEXT_FIELDS = ["size", "fabricNo", "pocket", "comment"] as const;
+
+export type NumberField = (typeof NUMBER_FIELDS)[number];
+export type TextField = (typeof TEXT_FIELDS)[number];
+export type MeasurementField = NumberField | TextField;
+export type MeasurementData = { [K in NumberField]?: number | null } & { [K in TextField]?: string | null };
+
+type FieldDef = { key: Exclude<MeasurementField, "comment">; label: string };
+
+const f = (key: FieldDef["key"], label: string): FieldDef => ({ key, label });
+
+export const GARMENTS = [
   {
-    title: "Upper body",
+    key: "blazer",
+    relation: "blazerM",
+    title: "Blazer / Waistcoat",
     fields: [
-      { key: "neck", label: "Neck" },
-      { key: "chest", label: "Chest" },
-      { key: "waist", label: "Waist" },
-      { key: "hip", label: "Hip" },
-      { key: "shoulder", label: "Shoulder" },
-      { key: "sleeveLength", label: "Sleeve length" },
-      { key: "armhole", label: "Armhole" },
-      { key: "bicep", label: "Bicep" },
-      { key: "wrist", label: "Wrist" },
-      { key: "shirtLength", label: "Shirt length" },
-      { key: "coatLength", label: "Coat length" },
+      f("size", "Size"), f("length", "Length"), f("chest", "Chest"), f("waist", "Waist"),
+      f("hip", "Hip"), f("shoulder", "Shoulder"), f("slLength", "Sl. Length"), f("armhole", "Armhole"),
+      f("biceps", "Biceps"), f("neck", "Neck"), f("fabricNo", "Fabric No."),
     ],
   },
   {
-    title: "Lower body",
+    key: "trouser",
+    relation: "trouserM",
+    title: "Trousers",
     fields: [
-      { key: "trouserWaist", label: "Trouser waist" },
-      { key: "seat", label: "Seat" },
-      { key: "thigh", label: "Thigh" },
-      { key: "knee", label: "Knee" },
-      { key: "calf", label: "Calf" },
-      { key: "bottom", label: "Bottom (hem)" },
-      { key: "inseam", label: "Inseam" },
-      { key: "trouserLength", label: "Trouser length" },
-      { key: "rise", label: "Rise" },
+      f("size", "Size"), f("length", "Length"), f("waist", "Waist"), f("hip", "Hip"),
+      f("thighs", "Thighs"), f("knees", "Knees"), f("bottom", "Bottom"), f("fc", "F.C"),
+      f("bc", "B.C"), f("hw", "H.W"), f("lw", "L.W"),
+    ],
+  },
+  {
+    key: "shirt",
+    relation: "shirtM",
+    title: "Shirt",
+    fields: [
+      f("size", "Size"), f("length", "Length"), f("chest", "Chest"), f("waist", "Waist"),
+      f("hip", "Hip"), f("shoulder", "Shoulder"), f("slLength", "Sl. Length"), f("armhole", "Armhole"),
+      f("biceps", "Biceps"), f("neck", "Neck"), f("pocket", "Pocket"),
     ],
   },
 ] as const;
 
-export type MeasurementKey =
-  (typeof MEASUREMENT_GROUPS)[number]["fields"][number]["key"];
+export type Garment = (typeof GARMENTS)[number];
+export type GarmentRelation = Garment["relation"];
 
-export const MEASUREMENT_KEYS: MeasurementKey[] = MEASUREMENT_GROUPS.flatMap(
-  (g) => g.fields.map((f) => f.key),
-);
+export function isTextField(key: MeasurementField): key is TextField {
+  return (TEXT_FIELDS as readonly string[]).includes(key);
+}
 
-export type MeasurementValues = Partial<Record<MeasurementKey, number | null>>;
+export const PRODUCTS = ["Blazer", "Trousers", "Shirt", "Waistcoat", "Tie/Bow"];

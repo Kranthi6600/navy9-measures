@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import type { ActionState } from "@/lib/types";
+import { DateInput } from "./DateInput";
 import { SubmitButton } from "./SubmitButton";
 import { useActionForm } from "./useActionForm";
 
 type Customer = {
   name: string;
-  phone: string | null;
+  mobile: string;
   email: string | null;
-  address: string | null;
-  notes: string | null;
+  dateOfBirth?: string;
+  height: number | null;
+  weight: number | null;
 };
 
 export function CustomerForm({
@@ -31,20 +33,26 @@ export function CustomerForm({
           <input className="input" id="name" name="name" required defaultValue={customer?.name} />
         </div>
         <div>
-          <label className="label" htmlFor="phone">Phone</label>
-          <input className="input" id="phone" name="phone" type="tel" defaultValue={customer?.phone ?? ""} />
+          <label className="label" htmlFor="mobile">Mobile *</label>
+          <input className="input" id="mobile" name="mobile" type="tel" required defaultValue={customer?.mobile} />
         </div>
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input className="input" id="email" name="email" type="email" defaultValue={customer?.email ?? ""} />
         </div>
-        <div className="sm:col-span-2">
-          <label className="label" htmlFor="address">Address</label>
-          <input className="input" id="address" name="address" defaultValue={customer?.address ?? ""} />
+        <div>
+          <label className="label" htmlFor="dateOfBirth">Date of birth</label>
+          <DateInput id="dateOfBirth" name="dateOfBirth" defaultValue={customer?.dateOfBirth} />
         </div>
-        <div className="sm:col-span-2">
-          <label className="label" htmlFor="notes">Notes</label>
-          <textarea className="input" id="notes" name="notes" rows={3} defaultValue={customer?.notes ?? ""} />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label" htmlFor="height">Height</label>
+            <input className="input" id="height" name="height" type="number" step="0.1" min="0" placeholder="cm / in" defaultValue={customer?.height ?? ""} />
+          </div>
+          <div>
+            <label className="label" htmlFor="weight">Weight (kg)</label>
+            <input className="input" id="weight" name="weight" type="number" step="0.1" min="0" defaultValue={customer?.weight ?? ""} />
+          </div>
         </div>
       </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}

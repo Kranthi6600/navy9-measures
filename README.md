@@ -1,15 +1,18 @@
 # navy9-measures
 
-Admin app for recording tailoring customers, their body measurements and reference photos.
+Admin app for a tailoring shop: customers, orders, garment measurements, payments and customer photos.
 
 **Stack:** Next.js 15 (App Router + server actions) · Tailwind CSS v4 · Prisma + PostgreSQL · NextAuth (credentials, JWT) · Cloudinary
 
 ## Features
 
 - Admin login. Every page except `/login` requires a signed-in admin.
-- Customer list with search by name, phone or email
-- Create, edit and delete customers
-- Measurement records in a grid form (upper and lower body, inches or cm) with history. New records are pre-filled from the latest record.
+- Customers with a unique mobile number, email, date of birth, height, weight and one photo. Search by name, mobile or email.
+- Orders with an editable, auto-suggested order number, entry date and items (product, rate, quantity, amount).
+- Total defaults to the sum of item amounts. Balance is calculated as total minus advance.
+- Blazer/Waistcoat, Trouser and Shirt measurements per order. New orders are pre-filled from the customer's most recent measurements.
+- Order search by order number, customer name or mobile, and a printable order page.
+- Deleting a customer deletes their orders, measurements and items.
 - Customer photo upload to Cloudinary
 
 ## Setup
@@ -28,4 +31,4 @@ Photo uploads stay disabled until `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` 
 
 ## Measurement fields
 
-Fields are defined in `src/lib/measurements.ts` and stored as columns on `Measurement` in `prisma/schema.prisma`. To add a field, add it in both places and run `npm run db:migrate`.
+Garment fields are defined in `GARMENTS` in `src/lib/measurements.ts` and stored as columns on `Measurement` in `prisma/schema.prisma`. To add a field, add it in both places and run `npm run db:migrate`.
