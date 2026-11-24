@@ -23,7 +23,7 @@ export type OrderDefaults = {
 const emptyRow: ItemRow = { product: "", rate: "", quantity: "1" };
 
 function rowAmount(row: ItemRow) {
-  const amount = Number(row.rate || 0) * Number(row.quantity || 0);
+  const amount = Number(row.rate || 0) * Number(row.quantity || 1);
   return Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0;
 }
 
