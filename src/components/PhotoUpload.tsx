@@ -28,7 +28,7 @@ export function PhotoUpload({
   }
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+    <form ref={formRef} method="post" onSubmit={onSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-end">
       <div className="flex-1">
         <label className="label" htmlFor="photo">Photo</label>
         <input className="input" id="photo" name="photo" type="file" accept="image/*" capture="environment" required />

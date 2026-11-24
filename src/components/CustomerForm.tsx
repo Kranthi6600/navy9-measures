@@ -24,7 +24,7 @@ export function CustomerForm({
 }) {
   const { state, onSubmit, pending } = useActionForm(action);
   return (
-    <form onSubmit={onSubmit} className="card space-y-4">
+    <form method="post" onSubmit={onSubmit} className="card space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <label className="label" htmlFor="name">Name *</label>

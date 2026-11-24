@@ -34,7 +34,7 @@ export function MeasurementForm({
   }, [defaults?.takenAt]);
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form method="post" onSubmit={onSubmit} className="space-y-6">
       <div className="card grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label className="label" htmlFor="takenAt">Date</label>
