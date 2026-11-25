@@ -15,8 +15,9 @@ model Admin {
 }
 
 model Customer {
-  id            String    @id @default(uuid())
-  name          String
+  id             String    @id @default(uuid())
+  customerNumber String    @unique // e.g., "CUST-0001"
+  name           String
   mobile        String    @unique
   email         String?
   dateOfBirth   DateTime?
@@ -43,9 +44,13 @@ model Order {
   advanceAmount Decimal? @db.Decimal(10, 2)
   balanceAmount Decimal? @db.Decimal(10, 2)
 
-  blazerM  Measurement? @relation("BlazerMeasurements")
-  trouserM Measurement? @relation("TrouserMeasurements")
-  shirtM   Measurement? @relation("ShirtMeasurements")
+  taxRate   Float? // GST rate as a percent, e.g., 18 for 18%
+  taxAmount Decimal? @db.Decimal(10, 2)
+
+  blazerM    Measurement? @relation("BlazerMeasurements")
+  waistcoatM Measurement? @relation("WaistcoatMeasurements")
+  trouserM   Measurement? @relation("TrouserMeasurements")
+  shirtM     Measurement? @relation("ShirtMeasurements")
 
   items OrderItem[]
 }
@@ -84,6 +89,9 @@ model Measurement {
 
   blazerOrderId String? @unique
   blazerOrder   Order?  @relation("BlazerMeasurements", fields: [blazerOrderId], references: [id], onDelete: Cascade)
+
+  waistcoatOrderId String? @unique
+  waistcoatOrder   Order?  @relation("WaistcoatMeasurements", fields: [waistcoatOrderId], references: [id], onDelete: Cascade)
 
   trouserOrderId String? @unique
   trouserOrder   Order?  @relation("TrouserMeasurements", fields: [trouserOrderId], references: [id], onDelete: Cascade)

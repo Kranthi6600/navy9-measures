@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatMoney } from "@/lib/format";
-import { GARMENTS, PRODUCTS, isTextField, type GarmentRelation, type MeasurementData } from "@/lib/measurements";
+import { GARMENTS, PRODUCTS, SIZE_OPTIONS, isTextField, type Garment, type GarmentRelation, type MeasurementData } from "@/lib/measurements";
 import type { ActionState } from "@/lib/types";
 import { CustomerFields, type CustomerValues } from "./CustomerFields";
 import { CustomerSearch } from "./CustomerSearch";
@@ -19,6 +19,7 @@ export type OrderDefaults = {
   entryDate?: string;
   totalAmount?: number | null;
   advanceAmount?: number | null;
+  taxRate?: number | null;
   items?: { product: string; rate: number; quantity: number }[];
   measurements?: Partial<Record<GarmentRelation, MeasurementData | null>>;
   customer?: (CustomerValues & { id: string; photoUrl: string | null }) | null;
@@ -70,10 +71,19 @@ export function OrderForm({
     return defaults.totalAmount == null || isAutoTotal ? "" : defaults.totalAmount.toString();
   });
   const [advance, setAdvance] = useState(defaults.advanceAmount?.toString() ?? "");
+  const [activeTab, setActiveTab] = useState<Garment["key"]>(GARMENTS[0].key);
+  const [gstEnabled, setGstEnabled] = useState(defaults.taxRate != null);
+  const [gstRate, setGstRate] = useState(defaults.taxRate?.toString() ?? "18");
 
   const itemsTotal = items.reduce((sum, row) => sum + (row.product ? rowAmount(row) : 0), 0);
   const effectiveTotal = total !== "" ? Number(total) : items.some((r) => r.product) ? itemsTotal : null;
-  const balance = effectiveTotal != null ? effectiveTotal - Number(advance || 0) : null;
+  const gstPercent = Number(gstRate);
+  const taxAmount =
+    gstEnabled && effectiveTotal != null && Number.isFinite(gstPercent)
+      ? Math.round(effectiveTotal * (gstPercent / 100) * 100) / 100
+      : null;
+  const finalTotal = effectiveTotal != null && taxAmount != null ? Math.round((effectiveTotal + taxAmount) * 100) / 100 : effectiveTotal;
+  const balance = finalTotal != null ? finalTotal - Number(advance || 0) : null;
   const customer = defaults.customer;
 
   function updateRow(index: number, patch: Partial<ItemRow>) {
@@ -126,17 +136,53 @@ export function OrderForm({
       </Section>
 
       <Section title="Measurements">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {GARMENTS.map((garment) => {
-            const values = defaults.measurements?.[garment.relation] ?? {};
-            return (
-              <fieldset key={garment.key} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+        <div className="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist">
+          {GARMENTS.map((garment) => (
+            <button
+              key={garment.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === garment.key}
+              onClick={() => setActiveTab(garment.key)}
+              className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === garment.key
+                  ? "border-blue-900 text-blue-900"
+                  : "border-transparent text-slate-500 hover:text-blue-900"
+              }`}
+            >
+              {garment.title}
+            </button>
+          ))}
+        </div>
+        {GARMENTS.map((garment) => {
+          const values = defaults.measurements?.[garment.relation] ?? {};
+          // Inactive panels stay mounted (hidden) so uncontrolled inputs keep
+          // their values and are still included in the submitted FormData.
+          return (
+            <div key={garment.key} role="tabpanel" hidden={activeTab !== garment.key} className="pt-4">
+              <fieldset className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
                 <legend className="px-1 text-sm font-semibold text-blue-900">{garment.title}</legend>
                 <p className="mb-3 text-xs text-slate-500">Leave empty if not part of this order.</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {garment.fields.map((field) => {
                     const isText = isTextField(field.key);
                     const name = `${garment.key}.${field.key}`;
+                    if (field.key === "size") {
+                      const options = SIZE_OPTIONS[garment.key];
+                      const current = values.size;
+                      return (
+                        <div key={field.key}>
+                          <label className="label" htmlFor={name}>{field.label}</label>
+                          <select className="input" id={name} name={name} defaultValue={current ?? ""}>
+                            <option value="">Select…</option>
+                            {current && !options.includes(current) && <option value={current}>{current}</option>}
+                            {options.map((size) => (
+                              <option key={size} value={size}>{size}</option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    }
                     return (
                       <div key={field.key}>
                         <label className="label" htmlFor={name}>{field.label}</label>
@@ -159,9 +205,9 @@ export function OrderForm({
                   <textarea className="input" id={`${garment.key}.comment`} name={`${garment.key}.comment`} rows={2} defaultValue={values.comment ?? ""} />
                 </div>
               </fieldset>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </Section>
 
       <Section title="Billing">
@@ -209,9 +255,43 @@ export function OrderForm({
         </div>
         <button type="button" className="btn mt-3" onClick={() => setItems((rows) => [...rows, emptyRow])}>+ Add item</button>
 
+        <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3 border-t border-slate-100 pt-4">
+          <label className="flex items-center gap-2 pb-2 text-sm font-medium text-slate-700">
+            <input
+              type="checkbox"
+              name="gstEnabled"
+              checked={gstEnabled}
+              onChange={(e) => setGstEnabled(e.target.checked)}
+              className="h-4 w-4 accent-blue-900"
+            />
+            Apply GST
+          </label>
+          <div>
+            <label className="label" htmlFor="taxRate">GST rate (%)</label>
+            <input
+              className="input w-28"
+              id="taxRate"
+              name="taxRate"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={gstRate}
+              disabled={!gstEnabled}
+              onChange={(e) => setGstRate(e.target.value)}
+            />
+          </div>
+          {gstEnabled && taxAmount != null && (
+            <p className="pb-2 text-sm text-slate-600">
+              GST {gstPercent}%: <span className="font-mono font-medium">{formatMoney(taxAmount)}</span>
+              {" · "}Total incl. GST: <span className="font-mono font-semibold">{formatMoney(finalTotal)}</span>
+            </p>
+          )}
+        </div>
+
         <div className="mt-4 grid grid-cols-1 gap-4 border-t border-slate-100 pt-4 sm:grid-cols-3">
           <div>
-            <label className="label" htmlFor="totalAmount">Total amount</label>
+            <label className="label" htmlFor="totalAmount">Total amount{gstEnabled ? " (before GST)" : ""}</label>
             <input className="input" id="totalAmount" name="totalAmount" type="number" min="0" step="0.01" placeholder={`${itemsTotal} (sum of items)`} value={total} onChange={(e) => setTotal(e.target.value)} />
           </div>
           <div>
@@ -219,7 +299,7 @@ export function OrderForm({
             <input className="input" id="advanceAmount" name="advanceAmount" type="number" min="0" step="0.01" value={advance} onChange={(e) => setAdvance(e.target.value)} />
           </div>
           <div>
-            <span className="label">Balance</span>
+            <span className="label">Balance{gstEnabled ? " (incl. GST)" : ""}</span>
             <p className="py-2 font-mono text-lg font-semibold">{formatMoney(balance)}</p>
           </div>
         </div>

@@ -18,11 +18,12 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
         where: { customerId: customer.id },
         orderBy: { entryDate: "desc" },
         take: 20,
-        include: { blazerM: true, trouserM: true, shirtM: true },
+        include: { blazerM: true, waistcoatM: true, trouserM: true, shirtM: true },
       })
     : [];
   const measurements = {
     blazerM: recent.find((o) => o.blazerM)?.blazerM ?? null,
+    waistcoatM: recent.find((o) => o.waistcoatM)?.waistcoatM ?? null,
     trouserM: recent.find((o) => o.trouserM)?.trouserM ?? null,
     shirtM: recent.find((o) => o.shirtM)?.shirtM ?? null,
   };

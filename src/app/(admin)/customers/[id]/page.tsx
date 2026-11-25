@@ -2,10 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteCustomer, removeCustomerPhoto, uploadCustomerPhoto } from "@/app/actions";
+import { CustomerOrdersTable, type CustomerOrderRow } from "@/components/CustomerOrdersTable";
 import { DeleteButton } from "@/components/DeleteButton";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { cloudinaryConfigured } from "@/lib/cloudinary";
-import { dateFmt, formatHeight, formatMoney } from "@/lib/format";
+import { dateFmt, formatHeight } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +21,16 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     },
   });
   if (!customer) notFound();
+
+  const orderRows: CustomerOrderRow[] = customer.orders.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    entryDate: o.entryDate.toISOString(),
+    items: o.items.map((i) => `${i.product} ×${i.quantity}`).join(", "),
+    total: o.totalAmount == null ? null : Number(o.totalAmount),
+    advance: o.advanceAmount == null ? null : Number(o.advanceAmount),
+    balance: o.balanceAmount == null ? null : Number(o.balanceAmount),
+  }));
 
   const details = [
     ["Mobile", customer.mobile],
@@ -79,39 +90,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <h2 className="text-lg font-semibold">Orders</h2>
           <Link href={`/orders/new?customer=${id}`} className="btn-primary">+ New order</Link>
         </div>
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase">
-              <tr>
-                <th className="px-4 py-3">Order No.</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Items</th>
-                <th className="px-4 py-3 text-right">Total</th>
-                <th className="px-4 py-3 text-right">Advance</th>
-                <th className="px-4 py-3 text-right">Balance</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {customer.orders.map((o) => (
-                <tr key={o.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium">
-                    <Link href={`/orders/${o.id}`} className="text-blue-900 hover:underline">#{o.orderNumber}</Link>
-                  </td>
-                  <td className="px-4 py-3">{dateFmt.format(o.entryDate)}</td>
-                  <td className="px-4 py-3">{o.items.map((i) => `${i.product} ×${i.quantity}`).join(", ") || "—"}</td>
-                  <td className="px-4 py-3 text-right font-mono">{formatMoney(o.totalAmount)}</td>
-                  <td className="px-4 py-3 text-right font-mono">{formatMoney(o.advanceAmount)}</td>
-                  <td className="px-4 py-3 text-right font-mono">{formatMoney(o.balanceAmount)}</td>
-                </tr>
-              ))}
-              {customer.orders.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">No orders yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <CustomerOrdersTable orders={orderRows} />
       </section>
     </div>
   );

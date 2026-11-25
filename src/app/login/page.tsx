@@ -42,7 +42,7 @@ function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-blue-900">Navy9 Measures</h1>
+        <h1 className="text-xl font-semibold text-blue-900">Navy9</h1>
         <p className="text-sm text-slate-500">Admin sign in</p>
       </div>
       <div>

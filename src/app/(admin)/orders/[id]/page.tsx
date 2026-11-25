@@ -12,7 +12,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { customer: true, items: true, blazerM: true, trouserM: true, shirtM: true },
+    include: { customer: true, items: true, blazerM: true, waistcoatM: true, trouserM: true, shirtM: true },
   });
   if (!order) notFound();
   const garments = GARMENTS.filter((g) => order[g.relation]);
@@ -65,6 +65,12 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         <dl className="ml-auto grid w-full max-w-xs grid-cols-2 gap-1 border-t border-slate-100 pt-3 text-sm">
           <dt className="text-slate-500">Total</dt>
           <dd className="text-right font-mono">{formatMoney(order.totalAmount)}</dd>
+          {order.taxAmount != null && (
+            <>
+              <dt className="text-slate-500">GST{order.taxRate != null ? ` (${order.taxRate}%)` : ""}</dt>
+              <dd className="text-right font-mono">{formatMoney(order.taxAmount)}</dd>
+            </>
+          )}
           <dt className="text-slate-500">Advance</dt>
           <dd className="text-right font-mono">{formatMoney(order.advanceAmount)}</dd>
           <dt className="font-semibold">Balance</dt>

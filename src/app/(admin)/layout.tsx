@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { SignOutButton } from "@/components/SignOutButton";
 import { requireAdmin } from "@/lib/auth";
@@ -9,12 +10,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="border-b print:hidden border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-6">
-            <Link href="/customers" className="text-lg font-semibold text-blue-900">Navy9 Measures</Link>
+            <Link href="/customers" className="flex items-center">
+              <Image src="/assets/navy9-logo.webp" alt="Navy9" width={40} height={40} className="h-10 w-auto" priority />
+            </Link>
             <nav className="flex gap-4 text-sm text-slate-600">
               <Link href="/customers" className="hover:text-blue-900">Customers</Link>
               <Link href="/orders" className="hover:text-blue-900">Orders</Link>
               <Link href="/orders/new" className="hover:text-blue-900">New order</Link>
-              <Link href="/customers/new" className="hover:text-blue-900">New customer</Link>
+              <Link href="/customers/new" className="hover:text-blue-900">Add customer</Link>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm text-slate-500">
