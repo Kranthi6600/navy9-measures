@@ -66,7 +66,7 @@ export function isTextField(key: MeasurementField): key is TextField {
 }
 
 const ALPHA_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
-const TROUSER_SIZES = ["30", "32", "34", "36", "38", "40"];
+const TROUSER_SIZES = ["28", "30", "32", "34", "36", "38", "40"];
 
 export const SIZE_OPTIONS: Record<Garment["key"], string[]> = {
   blazer: ALPHA_SIZES,

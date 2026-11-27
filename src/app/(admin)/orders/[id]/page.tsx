@@ -2,20 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteOrder } from "@/app/actions";
 import { DeleteButton } from "@/components/DeleteButton";
-import { MeasurementGrid } from "@/components/MeasurementGrid";
 import { PrintButton } from "@/components/PrintButton";
 import { dateFmt, formatMoney } from "@/lib/format";
-import { GARMENTS } from "@/lib/measurements";
 import { prisma } from "@/lib/prisma";
 
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { customer: true, items: true, blazerM: true, waistcoatM: true, trouserM: true, shirtM: true },
+    include: { customer: true, items: true },
   });
   if (!order) notFound();
-  const garments = GARMENTS.filter((g) => order[g.relation]);
 
   return (
     <div className="space-y-6">
@@ -78,13 +75,6 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         </dl>
       </section>
 
-      {garments.map((g) => (
-        <section key={g.key} className="card space-y-3">
-          <h2 className="text-sm font-semibold text-blue-900">{g.title}</h2>
-          <MeasurementGrid garment={g} values={order[g.relation]!} />
-        </section>
-      ))}
-      {garments.length === 0 && <p className="card text-sm text-slate-500">No measurements recorded for this order.</p>}
     </div>
   );
 }

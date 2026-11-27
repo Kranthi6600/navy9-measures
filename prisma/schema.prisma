@@ -29,6 +29,11 @@ model Customer {
   updatedAt     DateTime  @updatedAt
   orders        Order[]
 
+  blazerM    Measurement? @relation("BlazerMeasurements")
+  waistcoatM Measurement? @relation("WaistcoatMeasurements")
+  trouserM   Measurement? @relation("TrouserMeasurements")
+  shirtM     Measurement? @relation("ShirtMeasurements")
+
   @@index([name])
 }
 
@@ -46,11 +51,6 @@ model Order {
 
   taxRate   Float? // GST rate as a percent, e.g., 18 for 18%
   taxAmount Decimal? @db.Decimal(10, 2)
-
-  blazerM    Measurement? @relation("BlazerMeasurements")
-  waistcoatM Measurement? @relation("WaistcoatMeasurements")
-  trouserM   Measurement? @relation("TrouserMeasurements")
-  shirtM     Measurement? @relation("ShirtMeasurements")
 
   items OrderItem[]
 }
@@ -87,17 +87,17 @@ model Measurement {
 
   comment String?
 
-  blazerOrderId String? @unique
-  blazerOrder   Order?  @relation("BlazerMeasurements", fields: [blazerOrderId], references: [id], onDelete: Cascade)
+  blazerCustomerId String? @unique
+  blazerCustomer   Customer? @relation("BlazerMeasurements", fields: [blazerCustomerId], references: [id], onDelete: Cascade)
 
-  waistcoatOrderId String? @unique
-  waistcoatOrder   Order?  @relation("WaistcoatMeasurements", fields: [waistcoatOrderId], references: [id], onDelete: Cascade)
+  waistcoatCustomerId String? @unique
+  waistcoatCustomer   Customer? @relation("WaistcoatMeasurements", fields: [waistcoatCustomerId], references: [id], onDelete: Cascade)
 
-  trouserOrderId String? @unique
-  trouserOrder   Order?  @relation("TrouserMeasurements", fields: [trouserOrderId], references: [id], onDelete: Cascade)
+  trouserCustomerId String? @unique
+  trouserCustomer   Customer? @relation("TrouserMeasurements", fields: [trouserCustomerId], references: [id], onDelete: Cascade)
 
-  shirtOrderId String? @unique
-  shirtOrder   Order?  @relation("ShirtMeasurements", fields: [shirtOrderId], references: [id], onDelete: Cascade)
+  shirtCustomerId String? @unique
+  shirtCustomer   Customer? @relation("ShirtMeasurements", fields: [shirtCustomerId], references: [id], onDelete: Cascade)
 }
 
 model OrderItem {

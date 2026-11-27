@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatMoney } from "@/lib/format";
-import { GARMENTS, PRODUCTS, SIZE_OPTIONS, isTextField, type Garment, type GarmentRelation, type MeasurementData } from "@/lib/measurements";
+import { PRODUCTS } from "@/lib/measurements";
 import type { ActionState } from "@/lib/types";
 import { CustomerFields, type CustomerValues } from "./CustomerFields";
 import { CustomerSearch } from "./CustomerSearch";
@@ -21,7 +21,6 @@ export type OrderDefaults = {
   advanceAmount?: number | null;
   taxRate?: number | null;
   items?: { product: string; rate: number; quantity: number }[];
-  measurements?: Partial<Record<GarmentRelation, MeasurementData | null>>;
   customer?: (CustomerValues & { id: string; photoUrl: string | null }) | null;
 };
 
@@ -71,7 +70,6 @@ export function OrderForm({
     return defaults.totalAmount == null || isAutoTotal ? "" : defaults.totalAmount.toString();
   });
   const [advance, setAdvance] = useState(defaults.advanceAmount?.toString() ?? "");
-  const [activeTab, setActiveTab] = useState<Garment["key"]>(GARMENTS[0].key);
   const [gstEnabled, setGstEnabled] = useState(defaults.taxRate != null);
   const [gstRate, setGstRate] = useState(defaults.taxRate?.toString() ?? "18");
 
@@ -99,7 +97,7 @@ export function OrderForm({
       className="space-y-4"
     >
       <Section title="Customer">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_12rem]">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_12rem]">
           <div className="space-y-4">
             {showSearch && <CustomerSearch />}
             {customer && <input type="hidden" name="customerId" value={customer.id} />}
@@ -133,81 +131,6 @@ export function OrderForm({
           </div>
           <PhotoDrop enabled={photoEnabled} currentUrl={customer?.photoUrl} />
         </div>
-      </Section>
-
-      <Section title="Measurements">
-        <div className="flex gap-1 overflow-x-auto border-b border-slate-200" role="tablist">
-          {GARMENTS.map((garment) => (
-            <button
-              key={garment.key}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === garment.key}
-              onClick={() => setActiveTab(garment.key)}
-              className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === garment.key
-                  ? "border-blue-900 text-blue-900"
-                  : "border-transparent text-slate-500 hover:text-blue-900"
-              }`}
-            >
-              {garment.title}
-            </button>
-          ))}
-        </div>
-        {GARMENTS.map((garment) => {
-          const values = defaults.measurements?.[garment.relation] ?? {};
-          // Inactive panels stay mounted (hidden) so uncontrolled inputs keep
-          // their values and are still included in the submitted FormData.
-          return (
-            <div key={garment.key} role="tabpanel" hidden={activeTab !== garment.key} className="pt-4">
-              <fieldset className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
-                <legend className="px-1 text-sm font-semibold text-blue-900">{garment.title}</legend>
-                <p className="mb-3 text-xs text-slate-500">Leave empty if not part of this order.</p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                  {garment.fields.map((field) => {
-                    const isText = isTextField(field.key);
-                    const name = `${garment.key}.${field.key}`;
-                    if (field.key === "size") {
-                      const options = SIZE_OPTIONS[garment.key];
-                      const current = values.size;
-                      return (
-                        <div key={field.key}>
-                          <label className="label" htmlFor={name}>{field.label}</label>
-                          <select className="input" id={name} name={name} defaultValue={current ?? ""}>
-                            <option value="">Select…</option>
-                            {current && !options.includes(current) && <option value={current}>{current}</option>}
-                            {options.map((size) => (
-                              <option key={size} value={size}>{size}</option>
-                            ))}
-                          </select>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={field.key}>
-                        <label className="label" htmlFor={name}>{field.label}</label>
-                        <input
-                          className="input"
-                          id={name}
-                          name={name}
-                          type={isText ? "text" : "number"}
-                          inputMode={isText ? undefined : "decimal"}
-                          step={isText ? undefined : "0.25"}
-                          min={isText ? undefined : "0"}
-                          defaultValue={values[field.key] ?? ""}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-3">
-                  <label className="label" htmlFor={`${garment.key}.comment`}>Comment</label>
-                  <textarea className="input" id={`${garment.key}.comment`} name={`${garment.key}.comment`} rows={2} defaultValue={values.comment ?? ""} />
-                </div>
-              </fieldset>
-            </div>
-          );
-        })}
       </Section>
 
       <Section title="Billing">

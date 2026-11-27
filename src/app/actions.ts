@@ -105,11 +105,20 @@ export async function createCustomer(_prev: ActionState, formData: FormData): Pr
   await requireAdmin();
   const result = parseCustomer(formData);
   if (!result.data) return { error: result.error };
+  const measurements = parseMeasurements(formData);
+  if (measurements.error !== undefined) return { error: measurements.error };
   let id: string;
   try {
     id = (
       await prisma.customer.create({
-        data: { ...result.data, customerNumber: await nextCustomerNumber() },
+        data: {
+          ...result.data,
+          customerNumber: await nextCustomerNumber(),
+          blazerM: nestedMeasurement(measurements.data.blazerM, false),
+          waistcoatM: nestedMeasurement(measurements.data.waistcoatM, false),
+          trouserM: nestedMeasurement(measurements.data.trouserM, false),
+          shirtM: nestedMeasurement(measurements.data.shirtM, false),
+        },
       })
     ).id;
   } catch (e) {
@@ -124,8 +133,24 @@ export async function updateCustomer(id: string, _prev: ActionState, formData: F
   await requireAdmin();
   const result = parseCustomer(formData);
   if (!result.data) return { error: result.error };
+  const measurements = parseMeasurements(formData);
+  if (measurements.error !== undefined) return { error: measurements.error };
+  const existing = await prisma.customer.findUnique({
+    where: { id },
+    include: { blazerM: true, waistcoatM: true, trouserM: true, shirtM: true },
+  });
+  if (!existing) return { error: "Customer not found" };
   try {
-    await prisma.customer.update({ where: { id }, data: result.data });
+    await prisma.customer.update({
+      where: { id },
+      data: {
+        ...result.data,
+        blazerM: nestedMeasurement(measurements.data.blazerM, !!existing.blazerM),
+        waistcoatM: nestedMeasurement(measurements.data.waistcoatM, !!existing.waistcoatM),
+        trouserM: nestedMeasurement(measurements.data.trouserM, !!existing.trouserM),
+        shirtM: nestedMeasurement(measurements.data.shirtM, !!existing.shirtM),
+      },
+    });
   } catch (e) {
     if (isUniqueError(e)) return { error: DUPLICATE_MOBILE };
     throw e;
@@ -244,8 +269,6 @@ function parseOrder(formData: FormData) {
   if (total.error !== undefined) return { error: total.error };
   const advance = parseNumber(str(formData, "advanceAmount"), "advance amount", 100_000_000);
   if (advance.error !== undefined) return { error: advance.error };
-  const measurements = parseMeasurements(formData);
-  if (measurements.error !== undefined) return { error: measurements.error };
 
   const applyGst = str(formData, "gstEnabled") !== "";
   const taxRate = applyGst ? parseNumber(str(formData, "taxRate") || "18", "GST rate", 100) : { data: null };
@@ -273,7 +296,6 @@ function parseOrder(formData: FormData) {
         taxAmount,
       },
       items: items.data,
-      measurements: measurements.data,
     },
   };
 }
@@ -309,12 +331,7 @@ export async function saveOrder(orderId: string | null, _prev: ActionState, form
   const photo = parsePhoto(formData);
   if (photo.error !== undefined) return { error: photo.error };
 
-  const existingOrder = orderId
-    ? await prisma.order.findUnique({
-        where: { id: orderId },
-        include: { blazerM: true, waistcoatM: true, trouserM: true, shirtM: true },
-      })
-    : null;
+  const existingOrder = orderId ? await prisma.order.findUnique({ where: { id: orderId } }) : null;
   if (orderId && !existingOrder) return { error: "Order not found" };
   const customerId = existingOrder?.customerId ?? (str(formData, "customerId") || null);
   const existingCustomer = customerId ? await prisma.customer.findUnique({ where: { id: customerId } }) : null;
@@ -333,7 +350,7 @@ export async function saveOrder(orderId: string | null, _prev: ActionState, form
     ...customerResult.data,
     ...(uploaded && { photoUrl: uploaded.url, photoPublicId: uploaded.publicId }),
   };
-  const { entryDate, order, items, measurements } = orderResult.data;
+  const { entryDate, order, items } = orderResult.data;
 
   let saved: { id: string; customerId: string };
   try {
@@ -346,14 +363,7 @@ export async function saveOrder(orderId: string | null, _prev: ActionState, form
       if (existingOrder) {
         return tx.order.update({
           where: { id: existingOrder.id },
-          data: {
-            ...order,
-            items: { deleteMany: {}, create: items },
-            blazerM: nestedMeasurement(measurements.blazerM, !!existingOrder.blazerM),
-            waistcoatM: nestedMeasurement(measurements.waistcoatM, !!existingOrder.waistcoatM),
-            trouserM: nestedMeasurement(measurements.trouserM, !!existingOrder.trouserM),
-            shirtM: nestedMeasurement(measurements.shirtM, !!existingOrder.shirtM),
-          },
+          data: { ...order, items: { deleteMany: {}, create: items } },
         });
       }
       return tx.order.create({
@@ -362,10 +372,6 @@ export async function saveOrder(orderId: string | null, _prev: ActionState, form
           entryDate: entryDate ?? todayUtc(),
           customer: { connect: { id: customer.id } },
           items: { create: items },
-          blazerM: nestedMeasurement(measurements.blazerM, false),
-          waistcoatM: nestedMeasurement(measurements.waistcoatM, false),
-          trouserM: nestedMeasurement(measurements.trouserM, false),
-          shirtM: nestedMeasurement(measurements.shirtM, false),
         },
       });
     });

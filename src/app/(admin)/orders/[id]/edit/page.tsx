@@ -10,7 +10,7 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
   const { id } = await params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: { customer: true, items: true, blazerM: true, waistcoatM: true, trouserM: true, shirtM: true },
+    include: { customer: true, items: true },
   });
   if (!order) notFound();
   const { customer } = order;
@@ -34,12 +34,6 @@ export default async function EditOrderPage({ params }: { params: Promise<{ id: 
             rate: Number(item.rate),
             amount: Number(item.amount),
           })),
-          measurements: {
-            blazerM: order.blazerM,
-            waistcoatM: order.waistcoatM,
-            trouserM: order.trouserM,
-            shirtM: order.shirtM,
-          },
           customer: {
             id: customer.id,
             name: customer.name,

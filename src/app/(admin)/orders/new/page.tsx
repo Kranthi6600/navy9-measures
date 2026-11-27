@@ -12,22 +12,6 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
   const customer = customerId ? await prisma.customer.findUnique({ where: { id: customerId } }) : null;
   if (customerId && !customer) notFound();
 
-  // Pre-fill each garment from the customer's most recent order that has it.
-  const recent = customer
-    ? await prisma.order.findMany({
-        where: { customerId: customer.id },
-        orderBy: { entryDate: "desc" },
-        take: 20,
-        include: { blazerM: true, waistcoatM: true, trouserM: true, shirtM: true },
-      })
-    : [];
-  const measurements = {
-    blazerM: recent.find((o) => o.blazerM)?.blazerM ?? null,
-    waistcoatM: recent.find((o) => o.waistcoatM)?.waistcoatM ?? null,
-    trouserM: recent.find((o) => o.trouserM)?.trouserM ?? null,
-    shirtM: recent.find((o) => o.shirtM)?.shirtM ?? null,
-  };
-
   return (
     <div className="space-y-4">
       <div>
@@ -35,14 +19,12 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
           ← {customer ? customer.name : "Orders"}
         </Link>
         <h1 className="text-2xl font-semibold">New order</h1>
-        {recent.length > 0 && <p className="text-sm text-slate-500">Measurements pre-filled from previous orders.</p>}
       </div>
       <OrderForm
         key={customer?.id ?? "new"}
         action={saveOrder.bind(null, null)}
         defaults={{
           orderNumber: await nextOrderNumber(),
-          measurements,
           customer: customer && {
             id: customer.id,
             name: customer.name,

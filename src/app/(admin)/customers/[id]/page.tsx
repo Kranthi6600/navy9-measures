@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { deleteCustomer, removeCustomerPhoto, uploadCustomerPhoto } from "@/app/actions";
 import { CustomerOrdersTable, type CustomerOrderRow } from "@/components/CustomerOrdersTable";
 import { DeleteButton } from "@/components/DeleteButton";
+import { MeasurementGrid } from "@/components/MeasurementGrid";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { cloudinaryConfigured } from "@/lib/cloudinary";
 import { dateFmt, formatHeight } from "@/lib/format";
+import { GARMENTS } from "@/lib/measurements";
 import { prisma } from "@/lib/prisma";
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -14,6 +16,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const customer = await prisma.customer.findUnique({
     where: { id },
     include: {
+      blazerM: true,
+      waistcoatM: true,
+      trouserM: true,
+      shirtM: true,
       orders: {
         orderBy: { entryDate: "desc" },
         include: { items: { select: { product: true, quantity: true } } },
@@ -31,6 +37,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     advance: o.advanceAmount == null ? null : Number(o.advanceAmount),
     balance: o.balanceAmount == null ? null : Number(o.balanceAmount),
   }));
+
+  const garments = GARMENTS.filter((g) => customer[g.relation]);
 
   const details = [
     ["Mobile", customer.mobile],
@@ -84,6 +92,25 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           ))}
         </dl>
       </div>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Measurements</h2>
+          <Link href={`/customers/${id}/edit`} className="btn">Edit</Link>
+        </div>
+        {garments.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2">
+            {garments.map((g) => (
+              <div key={g.key} className="card space-y-3">
+                <h3 className="text-sm font-semibold text-blue-900">{g.title}</h3>
+                <MeasurementGrid garment={g} values={customer[g.relation]!} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="card text-sm text-slate-500">No measurements recorded.</p>
+        )}
+      </section>
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">

@@ -43,7 +43,7 @@ export function CustomerSearch() {
         }}
       />
       {data && (
-        <ul className="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-slate-200 bg-white text-sm shadow-lg">
+        <ul className="scrollbar-slim absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-slate-200 bg-white text-sm shadow-lg">
           {data.customers.map((c) => (
             <li key={c.id}>
               <Link href={`/orders/new?customer=${c.id}`} className="block px-3 py-2 hover:bg-slate-50" onClick={() => setQ("")}>
